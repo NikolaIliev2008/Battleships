@@ -1106,27 +1106,26 @@ void play_game() {
     Player* current = &player1;
     Player* opponent = &player2;
     
-    // Запазване на началните състояния
     memcpy(&current_replay.player1_initial, &player1, sizeof(Player));
     memcpy(&current_replay.player2_initial, &player2, sizeof(Player));
     
-    printf("\nНатиснете Enter за да започне играта...");
+    printf("\nPress Enter to start the game...");
     getchar();
     clear_screen();
     
-    printf("\n=== ЗАПОЧВА ИГРАТА ===\n");
+    printf("\n=== GAME'S STARTING ===\n");
     
     while(!game_over()) {
-        printf("\n--- Ред на %s ---\n", current->name);
+        printf("\n--- %s's turn ---\n", current->name);
         
-        printf("\n=== ОПЦИИ ===\n");
-        printf("1. Преглед на атаки и намерени кораби\n");
-        printf("2. Направи атака\n");
-        printf("Изберете опция: ");
+        printf("\n=== OPTIONS ===\n");
+        printf("1. View attacks and ships found\n");
+        printf("2. Make an attack\n");
+        printf("Choose option: ");
         
         int choice;
         if(scanf("%d", &choice) != 1) {
-            printf("Невалиден вход!\n");
+            printf("Invalid input!\n");
             while(getchar() != '\n');
             continue;
         }
@@ -1144,73 +1143,72 @@ void play_game() {
             int result = make_attack(current, opponent, row, col);
             
             if(result == -1) {
-                printf("Вече сте атакували тази позиция!\n");
+                printf("You have already attacked this position!\n");
                 continue;
             } else if(result == 1) {
-                printf("ПОПАДЕНИЕ!\n");
+                printf("HIT!\n");
             } else {
-                printf("ПРОПУСК!\n");
+                printf("MISS!\n");
                 Player* temp = current;
                 current = opponent;
                 opponent = temp;
                 
-                printf("\nНатиснете Enter за да продължите...");
+                printf("\nPress Enter to continue...");
                 getchar();
                 getchar();
                 clear_screen();
             }
         } else {
-            printf("Невалидна опция!\n");
+            printf("Invalid option.\n");
         }
     }
     
     if(player1.ships_sunk == MAX_SHIPS) {
         printf("\n=== %s ПЕЧЕЛИ! ===\n", player2.name);
-        printf("%s потопи всички кораби на %s!\n", player2.name, player1.name);
+        printf("%s sunk all of %s's ships!\n", player2.name, player1.name);
         strcpy(current_replay.winner, player2.name);
     } else {
-        printf("\n=== %s ПЕЧЕЛИ! ===\n", player1.name);
-        printf("%s потопи всички кораби на %s!\n", player1.name, player2.name);
+        printf("\n=== %s WINS! ===\n", player1.name);
+        printf("%s sunk all of %s's ships!\n", player1.name, player2.name);
         strcpy(current_replay.winner, player1.name);
     }
     
     get_current_time(current_replay.end_time);
     
-    printf("\nФинални дъски:\n");
-    printf("\nДъска на %s:\n", player1.name);
+    printf("\nFinal boards:\n");
+    printf("\nBoard of %s:\n", player1.name);
     print_board(player1.board, 1);
-    printf("\nДъска на %s:\n", player2.name);
+    printf("\nBoard of %s:\n", player2.name);
     print_board(player2.board, 1);
 }
 
 void play_single_player() {
     Player* human = &player1;
     Player* ai = &player2;
-    Player* current = human; // човекът започва първи
+    Player* current = human; 
     
-    // Запазване на началните състояния
     memcpy(&current_replay.player1_initial, &player1, sizeof(Player));
     memcpy(&current_replay.player2_initial, &player2, sizeof(Player));
     
-    printf("\nНатиснете Enter за да започне играта...");
+    printf("\nPress Enter to start the game...");
     getchar();
     getchar();
     clear_screen();
     
-    printf("\n=== ЗАПОЧВА ИГРАТА СРЕЩУ КОМПЮТЪР ===\n");
+    printf("\n=== GAME STARTS AGAINST COMPUTER ===\n");
     
     while(!game_over()) {
         if(current == human) {
-            printf("\n--- Вашия ред ---\n");
+            printf("\n--- Your turn ---\n");
             
-            printf("\n=== ОПЦИИ ===\n");
-            printf("1. Преглед на атаки и намерени кораби\n");
-            printf("2. Направи атака\n");
-            printf("Изберете опция: ");
+            printf("\n=== OPTIONS ===\n");
+            printf("1. View attacks and ships found\n");
+            printf("2. Make an attack\n");
+            printf("Choose option: ");
             
             int choice;
             if(scanf("%d", &choice) != 1) {
-                printf("Невалиден вход!\n");
+                printf("Invalid input.\n");
                 while(getchar() != '\n');
                 continue;
             }
@@ -1228,32 +1226,29 @@ void play_single_player() {
                 int result = make_attack(human, ai, row, col);
                 
                 if(result == -1) {
-                    printf("Вече сте атакували тази позиция!\n");
+                    printf("You have already attacked this position!\n");
                     continue;
                 } else if(result == 1) {
-                    printf("ПОПАДЕНИЕ!\n");
+                    printf("HIT!\n");
                 } else {
-                    printf("ПРОПУСК!\n");
-                    current = ai; // ред на компютъра
+                    printf("MISS!\n");
+                    current = ai; 
                     
-                    printf("\nНатиснете Enter за да продължите...");
+                    printf("\nPress Enter to continue...");
                     getchar();
                     getchar();
                     clear_screen();
                 }
             } else {
-                printf("Невалидна опция!\n");
+                printf("Invalid option.\n");
             }
         } else {
-            // AI ред
-            printf("\n--- Ред на компютъра ---\n");
+            printf("\n---Computer's turn---\n");
             
             ai_make_move(ai, human);
             
             if(!game_over()) {
-                // Проверка дали AI трябва да продължи или да смени реда
                 int last_move_hit = 0;
-                // Намери последното попадение в последните ходове
                 if(current_replay.move_count > 0) {
                     Move* last_move = &current_replay.moves[current_replay.move_count - 1];
                     if(strcmp(last_move->player_name, ai->name) == 0 && last_move->hit) {
@@ -1262,8 +1257,8 @@ void play_single_player() {
                 }
                 
                 if(!last_move_hit) {
-                    current = human; // ред на човека
-                    printf("\nНатиснете Enter за да продължите...");
+                    current = human; 
+                    printf("\nPress Enter to continue...");
                     getchar();
                     clear_screen();
                 }
@@ -1272,21 +1267,21 @@ void play_single_player() {
     }
     
     if(player1.ships_sunk == MAX_SHIPS) {
-        printf("\n=== КОМПЮТЪРЪТ ПЕЧЕЛИ! ===\n");
-        printf("Компютърът потопи всички ваши кораби!\n");
+        printf("\n=== COMPUTER WINS ===\n");
+        printf("The computer sank all your ships!\n");
         strcpy(current_replay.winner, player2.name);
     } else {
-        printf("\n=== ВИЕ ПЕЧЕЛИТЕ! ===\n");
-        printf("Потопихте всички кораби на компютъра!\n");
+        printf("\n=== YOU WIN ===\n");
+        printf("You sunk all the computer ships!\n");
         strcpy(current_replay.winner, player1.name);
     }
     
     get_current_time(current_replay.end_time);
     
-    printf("\nФинални дъски:\n");
-    printf("\nВашата дъска:\n");
+    printf("\nFinal boards:\n");
+    printf("\nYour board:\n");
     print_board(player1.board, 1);
-    printf("\nДъска на компютъра:\n");
+    printf("\nComputer's board:\n");
     print_board(player2.board, 1);
 }
 
@@ -1343,14 +1338,12 @@ int make_attack(Player* attacker, Player* defender, int row, int col) {
             }
         }
         
-        // Добавяне на хода към риплей
         add_move_to_replay(attacker->name, row, col, 1, ship_sunk, ship_length);
         
         return 1; 
     } else {
         attacker->attacks[row][col] = MISS;
         
-        // Добавяне на хода към риплей
         add_move_to_replay(attacker->name, row, col, 0, 0, 0);
         
         return 0;
