@@ -50,7 +50,6 @@ typedef struct {
     int is_ai;
 } Player;
 
-// Структура за записване на ход
 typedef struct {
     char player_name[32];
     int row, col;
@@ -60,7 +59,6 @@ typedef struct {
     char timestamp[30];
 } Move;
 
-// Структура за записване на цялата игра
 typedef struct {
     Player player1_initial;
     Player player2_initial;
@@ -71,21 +69,19 @@ typedef struct {
     char end_time[30];
 } GameReplay;
 
-// AI структура за интелигентни атаки
 typedef struct {
-    int hunting;  // дали AI е в режим на търсене на кораб
+    int hunting; 
     int hunt_row, hunt_col;
-    int hunt_direction;  // посока за търсене: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
-    int hunt_hits[10][2]; // позиции на попаденията
+    int hunt_direction;  
+    int hunt_hits[10][2]; 
     int hunt_hit_count;
 } AIState;
 
 Player player1, player2;
 GameReplay current_replay;
 AIState ai_state;
-int last_row = -1, last_col = -1; // за относителни атаки
+int last_row = -1, last_col = -1; 
 
-// Функционални декларации
 void clear_screen();
 void print_board(CellState board[BOARD_SIZE][BOARD_SIZE], int show_ships);
 void print_attacks_with_ships_found(Player* attacker, Player* defender);
@@ -107,7 +103,6 @@ void ai_make_move(Player* ai_player, Player* human_player);
 int get_attack_coordinates(Player* current_player, int* row, int* col);
 int game_over();
 
-// Функции за риплей и криптиране
 void get_current_time(char* buffer);
 void init_replay();
 void add_move_to_replay(const char* player_name, int row, int col, int hit, int ship_sunk, int ship_length);
@@ -117,7 +112,6 @@ void load_and_play_replay();
 void load_and_play_encrypted_replay();
 void replay_menu();
 
-// Криптографски функции
 int derive_key_from_password(const char* password, unsigned char* salt, unsigned char* key);
 int encrypt_data(unsigned char* plaintext, int plaintext_len, unsigned char* key, 
                 unsigned char* iv, unsigned char* ciphertext);
@@ -125,7 +119,7 @@ int decrypt_data(unsigned char* ciphertext, int ciphertext_len, unsigned char* k
                 unsigned char* iv, unsigned char* plaintext);
 
 int main() {
-    srand(time(NULL)); // инициализация на random generator
+    srand(time(NULL)); 
     
     memset(&player1, 0, sizeof(Player));
     memset(&player2, 0, sizeof(Player));
@@ -153,12 +147,10 @@ int main() {
         replay_menu();
         return 0;
     }
-    
-    // Инициализиране на риплей системата
+
     init_replay();
     
     if(choice == 2) {
-        // Single player mode
         printf("Въведете вашето име: ");
         scanf("%s", player1.name);
         strcpy(player2.name, "Компютър");
@@ -168,7 +160,6 @@ int main() {
         setup_player_ships_enhanced(&player1);
         
         printf("\nКомпютърът располага корабите си...\n");
-        // AI randomly places ships
         for(int attempt = 0; attempt < 1000; attempt++) {
             memset(&player2, 0, sizeof(Player));
             strcpy(player2.name, "Компютър");
@@ -206,7 +197,6 @@ int main() {
         
         play_single_player();
     } else {
-        // Two player mode
         printf("Въведете име на Играч 1: ");
         scanf("%s", player1.name);
         printf("Въведете име на Играч 2: ");
@@ -225,8 +215,7 @@ int main() {
         
         play_game();
     }
-    
-    // Запазване на риплей след края на играта
+
     printf("\nЖелаете ли да запазите историята на играта криптирана? (y/n): ");
     char save_choice;
     scanf(" %c", &save_choice);
@@ -312,7 +301,6 @@ int decrypt_data(unsigned char* ciphertext, int ciphertext_len, unsigned char* k
 }
 
 void save_encrypted_replay(void) {
-    // Въвеждане на парола
     char password[256];
     char confirm_password[256];
     
@@ -327,14 +315,12 @@ void save_encrypted_replay(void) {
         return;
     }
     
-    // Създаване на директория за записи
     #ifdef _WIN32
         system("mkdir replays 2>nul");
     #else
         system("mkdir -p replays");
     #endif
     
-    // Генериране на salt и IV
     unsigned char salt[SALT_SIZE];
     unsigned char iv[IV_SIZE];
     unsigned char key[KEY_SIZE];
@@ -348,28 +334,23 @@ void save_encrypted_replay(void) {
         printf("Грешка при генериране на IV!\n");
         return;
     }
-    
-    // Генериране на ключ от паролата
+
     if(derive_key_from_password(password, salt, key) != 1) {
         printf("Грешка при генериране на ключ!\n");
         return;
     }
     
-    // Запазване на време на край
     get_current_time(current_replay.end_time);
     
-    // Подготовка на данните за криптиране
     unsigned char* plaintext = (unsigned char*)&current_replay;
     int plaintext_len = sizeof(GameReplay);
-    
-    // Алокиране на памет за криптираните данни (с добавен padding)
+
     unsigned char* ciphertext = malloc(plaintext_len + EVP_CIPHER_block_size(EVP_aes_256_cbc()));
     if(!ciphertext) {
         printf("Грешка при алокиране на памет!\n");
         return;
     }
-    
-    // Криптиране на данните
+
     int ciphertext_len = encrypt_data(plaintext, plaintext_len, key, iv, ciphertext);
     if(ciphertext_len == -1) {
         printf("Грешка при криптиране на данните!\n");
@@ -377,7 +358,6 @@ void save_encrypted_replay(void) {
         return;
     }
     
-    // Генериране на име на файл с времева отметка
     char filename[100];
     time_t rawtime;
     struct tm* timeinfo;
@@ -386,7 +366,6 @@ void save_encrypted_replay(void) {
     
     strftime(filename, sizeof(filename), "replays/game_%Y%m%d_%H%M%S.encrypted", timeinfo);
     
-    // Записване във файл
     FILE* file = fopen(filename, "wb");
     if(!file) {
         printf("Грешка при създаване на криптиран файл!\n");
@@ -394,7 +373,6 @@ void save_encrypted_replay(void) {
         return;
     }
     
-    // Записване на salt, IV и криптираните данни
     fwrite(salt, 1, SALT_SIZE, file);
     fwrite(iv, 1, IV_SIZE, file);
     fwrite(ciphertext, 1, ciphertext_len, file);
@@ -404,7 +382,6 @@ void save_encrypted_replay(void) {
     
     printf("Криптираният запис на играта е запазен като: %s\n", filename);
     
-    // Изчистване на паролата от паметта
     memset(password, 0, sizeof(password));
     memset(confirm_password, 0, sizeof(confirm_password));
     memset(key, 0, sizeof(key));
@@ -426,7 +403,6 @@ void load_and_play_encrypted_replay() {
         return;
     }
     
-    // Четене на salt и IV
     unsigned char salt[SALT_SIZE];
     unsigned char iv[IV_SIZE];
     unsigned char key[KEY_SIZE];
@@ -442,21 +418,18 @@ void load_and_play_encrypted_replay() {
         fclose(file);
         return;
     }
-    
-    // Генериране на ключ от паролата
+
     if(derive_key_from_password(password, salt, key) != 1) {
         printf("Грешка при генериране на ключ!\n");
         fclose(file);
         return;
     }
     
-    // Определяне на размера на криптираните данни
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     int ciphertext_len = file_size - SALT_SIZE - IV_SIZE;
     fseek(file, SALT_SIZE + IV_SIZE, SEEK_SET);
     
-    // Четене на криптираните данни
     unsigned char* ciphertext = malloc(ciphertext_len);
     if(!ciphertext) {
         printf("Грешка при алокиране на памет!\n");
@@ -472,7 +445,6 @@ void load_and_play_encrypted_replay() {
     }
     fclose(file);
     
-    // Декриптиране на данните
     unsigned char* plaintext = malloc(sizeof(GameReplay) + EVP_CIPHER_block_size(EVP_aes_256_cbc()));
     if(!plaintext) {
         printf("Грешка при алокиране на памет за декриптиране!\n");
@@ -488,18 +460,15 @@ void load_and_play_encrypted_replay() {
         return;
     }
     
-    // Копиране на декриптираните данни
     GameReplay replay;
     memcpy(&replay, plaintext, sizeof(GameReplay));
     
     free(ciphertext);
     free(plaintext);
     
-    // Изчистване на паролата от паметта
     memset(password, 0, sizeof(password));
     memset(key, 0, sizeof(key));
-    
-    // Показване на информация за играта
+
     printf("\n=== ДЕКРИПТИРАН GAME REPLAY ===\n");
     printf("Играч 1: %s\n", replay.player1_initial.name);
     printf("Играч 2: %s\n", replay.player2_initial.name);
@@ -511,12 +480,10 @@ void load_and_play_encrypted_replay() {
     
     printf("Натиснете Enter за да започне възпроизвеждането...");
     getchar();
-    
-    // Възстановяване на началните състояния
+
     Player p1 = replay.player1_initial;
     Player p2 = replay.player2_initial;
     
-    // Изчистване на атаките за визуализация на риплея
     for(int i = 0; i < BOARD_SIZE; i++) {
         for(int j = 0; j < BOARD_SIZE; j++) {
             p1.attacks[i][j] = EMPTY;
@@ -526,7 +493,6 @@ void load_and_play_encrypted_replay() {
         }
     }
     
-    // Възпроизвеждане на всеки ход
     for(int i = 0; i < replay.move_count; i++) {
         clear_screen();
         Move* move = &replay.moves[i];
@@ -536,11 +502,9 @@ void load_and_play_encrypted_replay() {
         printf("Цел: %c%d\n", row_to_coord(move->row), move->col + 1);
         printf("Време: %s\n", move->timestamp);
         
-        // Определяне на атакуващ и защитаващ се играч
         Player* attacker = (strcmp(move->player_name, p1.name) == 0) ? &p1 : &p2;
         Player* defender = (strcmp(move->player_name, p1.name) == 0) ? &p2 : &p1;
         
-        // Прилагане на хода
         if(move->hit) {
             attacker->attacks[move->row][move->col] = HIT;
             defender->board[move->row][move->col] = HIT;
@@ -554,7 +518,6 @@ void load_and_play_encrypted_replay() {
             printf("Резултат: ПРОПУСК!\n");
         }
         
-        // Показване на дъската на атакуващия
         printf("\nДъска с атаки на %s:\n", move->player_name);
         print_board(attacker->attacks, 0);
         
@@ -579,7 +542,6 @@ int load_ships_from_file(Player* player, const char* filename) {
         return 0;
     }
     
-    // Изчистване на дъската
     for(int i = 0; i < BOARD_SIZE; i++) {
         for(int j = 0; j < BOARD_SIZE; j++) {
             player->board[i][j] = EMPTY;
@@ -610,7 +572,6 @@ int load_ships_from_file(Player* player, const char* filename) {
                 continue;
             }
             
-            // Използваме размера за текущия кораб
             if(place_ship(player, row, col, ship_sizes[ships_loaded], (Direction)dir)) {
                 ships_loaded++;
             } else {
@@ -658,7 +619,6 @@ void edit_ship_position(Player* player, int ship_index) {
     Ship* ship = &player->ships[ship_index];
     int old_length = ship->length;
     
-    // Премахване на стария кораб от дъската
     for(int i = 0; i < ship->length; i++) {
         int curr_row = ship->row, curr_col = ship->col;
         
@@ -672,7 +632,6 @@ void edit_ship_position(Player* player, int ship_index) {
         player->board[curr_row][curr_col] = EMPTY;
     }
     
-    // Премахване на кораба от масива
     for(int i = ship_index; i < player->ship_count - 1; i++) {
         player->ships[i] = player->ships[i + 1];
     }
@@ -729,8 +688,7 @@ void setup_player_ships_enhanced(Player* player) {
     printf("\n=== Разположение на кораби - %s ===\n", player->name);
     printf("Типове кораби: 4 Малки(2), 3 Средни(3), 2 Големи(4), 1 Крайцер(6)\n");
     printf("Посоки: 0=НАГОРЕ, 1=НАДОЛУ, 2=НАЛЯВО, 3=НАДЯСНО\n\n");
-    
-    // Опция за зареждане от файл
+
     printf("Искате ли да заредите конфигурация от файл? (y/n): ");
     char load_choice;
     scanf(" %c", &load_choice);
@@ -777,7 +735,6 @@ void setup_player_ships_enhanced(Player* player) {
         
         switch(choice) {
             case 1: {
-                // Постави следващ кораб
                 int current_ship = player->ship_count;
                 int placed = 0;
                 
@@ -908,11 +865,9 @@ int get_attack_coordinates(Player* current_player __attribute__((unused)), int* 
         while(getchar() != '\n');
         return 0;
     }
-    
-    // Проверка дали въведеното е директно координат (напр. B3)
+
     if(strlen(input) >= 2 && input[0] >= 'A' && input[0] <= 'J' && 
        input[1] >= '1' && input[1] <= '9') {
-        // Директно въведен координат
         char letter = toupper(input[0]);
         int num = atoi(input + 1);
         if(num >= 1 && num <= 10) {
@@ -929,7 +884,6 @@ int get_attack_coordinates(Player* current_player __attribute__((unused)), int* 
         return 0;
     }
     
-    // Проверка дали въведеното е номер на опция
     int choice = atoi(input);
     if(choice < 1 || choice > 2 || (choice == 2 && (last_row == -1 || last_col == -1))) {
         printf("Невалидна опция!\n");
@@ -941,18 +895,16 @@ int get_attack_coordinates(Player* current_player __attribute__((unused)), int* 
         char pos[10];
         if(scanf("%s", pos) != 1 || strlen(pos) < 2) {
             printf("Невалиден вход!\n");
-            while(getchar() != '\n'); // изчистване на входния буфер
+            while(getchar() != '\n'); 
             return 0;
         }
         
-        // Проверка дали първият символ е валидна буква
         char letter = toupper(pos[0]);
         if(letter < 'A' || letter > 'J') {
             printf("Невалидна буква! Използвайте A-J.\n");
             return 0;
         }
-        
-        // Проверка дали числото е валидно
+
         int num = atoi(pos + 1);
         if(num < 1 || num > 10) {
             printf("Невалидно число! Използвайте 1-10.\n");
@@ -986,10 +938,10 @@ int get_attack_coordinates(Player* current_player __attribute__((unused)), int* 
         *col = last_col;
         
         switch(direction) {
-            case 1: (*row)--; break; // нагоре
-            case 2: (*row)++; break; // надолу
-            case 3: (*col)--; break; // наляво
-            case 4: (*col)++; break; // надясно
+            case 1: (*row)--; break; 
+            case 2: (*row)++; break;
+            case 3: (*col)--; break; 
+            case 4: (*col)++; break; 
         }
         
         if(*row < 0 || *row >= BOARD_SIZE || *col < 0 || *col >= BOARD_SIZE) {
@@ -1008,28 +960,24 @@ int get_attack_coordinates(Player* current_player __attribute__((unused)), int* 
 
 void ai_make_move(Player* ai_player, Player* human_player) {
     int row, col;
-    
-    // AI стратегия
+
     if(!ai_state.hunting) {
-        // Случайна атака
         do {
             row = rand() % BOARD_SIZE;
             col = rand() % BOARD_SIZE;
         } while(ai_player->attacks[row][col] != EMPTY);
     } else {
-        // Интелигентно търсене след попадение
         int found = 0;
         
-        // Опитай в текущата посока
         if(ai_state.hunt_direction != -1) {
             row = ai_state.hunt_row;
             col = ai_state.hunt_col;
             
             switch(ai_state.hunt_direction) {
-                case 0: row--; break; // UP
-                case 1: row++; break; // DOWN
-                case 2: col--; break; // LEFT  
-                case 3: col++; break; // RIGHT
+                case 0: row--; break;
+                case 1: row++; break; 
+                case 2: col--; break;  
+                case 3: col++; break; 
             }
             
             if(row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE && 
@@ -1038,7 +986,6 @@ void ai_make_move(Player* ai_player, Player* human_player) {
             }
         }
         
-        // Ако текущата посока не работи, опитай нова
         if(!found) {
             for(int dir = 0; dir < 4 && !found; dir++) {
                 row = ai_state.hunt_row;
@@ -1058,8 +1005,7 @@ void ai_make_move(Player* ai_player, Player* human_player) {
                 }
             }
         }
-        
-        // Ако нищо не работи, върни се към случайна атака
+    
         if(!found) {
             ai_state.hunting = 0;
             ai_state.hunt_direction = -1;
@@ -1077,7 +1023,6 @@ void ai_make_move(Player* ai_player, Player* human_player) {
     if(result == 1) {
         printf("ПОПАДЕНИЕ! Компютърът отново атакува.\n");
         
-        // Започни или продължи търсенето
         if(!ai_state.hunting) {
             ai_state.hunting = 1;
             ai_state.hunt_row = row;
@@ -1087,7 +1032,6 @@ void ai_make_move(Player* ai_player, Player* human_player) {
             ai_state.hunt_hits[0][0] = row;
             ai_state.hunt_hits[0][1] = col;
         } else {
-            // Продължи в същата посока
             ai_state.hunt_row = row;
             ai_state.hunt_col = col;
             if(ai_state.hunt_hit_count < 10) {
@@ -1100,18 +1044,14 @@ void ai_make_move(Player* ai_player, Player* human_player) {
         printf("ПРОПУСК!\n");
         
         if(ai_state.hunting && ai_state.hunt_direction != -1) {
-            // Смени посоката
             ai_state.hunt_direction = -1;
         }
     }
     
-    // Провери дали корабът е потопен
     if(result == 1) {
-        // Провери дали някой кораб е потопен
         for(int i = 0; i < human_player->ship_count; i++) {
             Ship* ship = &human_player->ships[i];
             if(ship->sunk && ship->hits == ship->length) {
-                // Корабът е потопен, спри търсенето
                 ai_state.hunting = 0;
                 ai_state.hunt_direction = -1;
                 ai_state.hunt_hit_count = 0;
@@ -1153,14 +1093,12 @@ void add_move_to_replay(const char* player_name, int row, int col, int hit, int 
 }
 
 void save_replay(void) {
-    // Създаване на директория за записи
     #ifdef _WIN32
         system("mkdir replays 2>nul");
     #else
         system("mkdir -p replays");
     #endif
     
-    // Генериране на име на файл с времева отметка
     char filename[100];
     time_t rawtime;
     struct tm* timeinfo;
@@ -1168,8 +1106,7 @@ void save_replay(void) {
     timeinfo = localtime(&rawtime);
     
     strftime(filename, sizeof(filename), "replays/game_%Y%m%d_%H%M%S.replay", timeinfo);
-    
-    // Запазване на време на край
+
     get_current_time(current_replay.end_time);
     
     FILE* file = fopen(filename, "wb");
@@ -1199,8 +1136,7 @@ void load_and_play_replay() {
     GameReplay replay;
     fread(&replay, sizeof(GameReplay), 1, file);
     fclose(file);
-    
-    // Показване на информация за играта
+
     printf("\n=== GAME REPLAY INFO ===\n");
     printf("Player 1: %s\n", replay.player1_initial.name);
     printf("Player 2: %s\n", replay.player2_initial.name);
@@ -1212,12 +1148,10 @@ void load_and_play_replay() {
     
     printf("Press Enter to start replay...");
     getchar();
-    
-    // Възстановяване на началните състояния
+
     Player p1 = replay.player1_initial;
     Player p2 = replay.player2_initial;
     
-    // Изчистване на атаките за визуализация на риплея
     for(int i = 0; i < BOARD_SIZE; i++) {
         for(int j = 0; j < BOARD_SIZE; j++) {
             p1.attacks[i][j] = EMPTY;
@@ -1227,7 +1161,6 @@ void load_and_play_replay() {
         }
     }
     
-    // Възпроизвеждане на всеки ход
     for(int i = 0; i < replay.move_count; i++) {
         clear_screen();
         Move* move = &replay.moves[i];
@@ -1237,11 +1170,9 @@ void load_and_play_replay() {
         printf("Target: %c%d\n", row_to_coord(move->row), move->col + 1);
         printf("Time: %s\n", move->timestamp);
         
-        // Определяне на атакуващ и защитаващ се играч
         Player* attacker = (strcmp(move->player_name, p1.name) == 0) ? &p1 : &p2;
         Player* defender = (strcmp(move->player_name, p1.name) == 0) ? &p2 : &p1;
         
-        // Прилагане на хода
         if(move->hit) {
             attacker->attacks[move->row][move->col] = HIT;
             defender->board[move->row][move->col] = HIT;
@@ -1255,7 +1186,6 @@ void load_and_play_replay() {
             printf("Result: MISS!\n");
         }
         
-        // Показване на дъската на атакуващия
         printf("\n%s's attack board:\n", move->player_name);
         print_board(attacker->attacks, 0);
         
@@ -1510,7 +1440,6 @@ void play_game() {
     Player* current = &player1;
     Player* opponent = &player2;
     
-    // Запазване на началните състояния
     memcpy(&current_replay.player1_initial, &player1, sizeof(Player));
     memcpy(&current_replay.player2_initial, &player2, sizeof(Player));
     
@@ -1590,9 +1519,8 @@ void play_game() {
 void play_single_player() {
     Player* human = &player1;
     Player* ai = &player2;
-    Player* current = human; // човекът започва първи
-    
-    // Запазване на началните състояния
+    Player* current = human;
+
     memcpy(&current_replay.player1_initial, &player1, sizeof(Player));
     memcpy(&current_replay.player2_initial, &player2, sizeof(Player));
     
@@ -1638,7 +1566,7 @@ void play_single_player() {
                     printf("ПОПАДЕНИЕ!\n");
                 } else {
                     printf("ПРОПУСК!\n");
-                    current = ai; // ред на компютъра
+                    current = ai; 
                     
                     printf("\nНатиснете Enter за да продължите...");
                     getchar();
@@ -1655,9 +1583,7 @@ void play_single_player() {
             ai_make_move(ai, human);
             
             if(!game_over()) {
-                // Проверка дали AI трябва да продължи или да смени реда
                 int last_move_hit = 0;
-                // Намери последното попадение в последните ходове
                 if(current_replay.move_count > 0) {
                     Move* last_move = &current_replay.moves[current_replay.move_count - 1];
                     if(strcmp(last_move->player_name, ai->name) == 0 && last_move->hit) {
@@ -1666,7 +1592,7 @@ void play_single_player() {
                 }
                 
                 if(!last_move_hit) {
-                    current = human; // ред на човека
+                    current = human; 
                     printf("\nНатиснете Enter за да продължите...");
                     getchar();
                     clear_screen();
@@ -1747,14 +1673,12 @@ int make_attack(Player* attacker, Player* defender, int row, int col) {
             }
         }
         
-        // Добавяне на хода към риплей
         add_move_to_replay(attacker->name, row, col, 1, ship_sunk, ship_length);
         
         return 1; 
     } else {
         attacker->attacks[row][col] = MISS;
-        
-        // Добавяне на хода към риплей
+
         add_move_to_replay(attacker->name, row, col, 0, 0, 0);
         
         return 0;
