@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99
 TARGET = battleships
-SOURCE = ships.c
+SOURCE = new.c
 
 all: $(TARGET)
 
